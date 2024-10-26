@@ -1,0 +1,46 @@
+define white $01 ; The number 1
+define green $05 ; The number 5
+define lblue $03 ; The number 3
+define dblue $06 ; The number 6
+define ltgrn $0d ; The number 13
+define blue  $0e ; The number 14
+
+define  sysRandom  $fe ; Address of random number
+
+; Pixels are at $0200 to $05ff
+; Each row of pixels is 32 bits wide (0-31)
+
+; How would we stop sysRandom from being 0?
+
+getRandom:
+  LDA sysRandom
+; zero out first number? top 4 bits
+  AND #$0f
+  CMP #$0
+  BEQ getRandom
+  RTS
+
+; TODO: Why doesn't this work?
+JSR getRandom
+STA $0221
+JSR getRandom
+STA $0261
+JSR getRandom
+STA $02a1
+JSR getRandom
+STA $02e1
+
+; Bottom of screen
+LDA #green
+STA $05e0
+STA $05e1
+
+LDA #blue
+LDX #$e2
+drawBlueLine:
+  STA $0500,x
+  INX
+  CPX #$00
+BNE drawBlueLine
+
+
