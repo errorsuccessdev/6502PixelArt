@@ -5,22 +5,29 @@ define dblue $06 ; The number 6
 define ltgrn $0d ; The number 13
 define blue  $0e ; The number 14
 
-define  sysRandom  $fe ; Address of random number
+define sysRandom  $fe ; Address of random number
+define sysLastKey $ff
+
+define mouseLow  $10
+define mouseHigh $11
+define mouseMove $12
+
+; ASCII values of keys controlling the mouse
+define ASCII_w      $77
+define ASCII_a      $61
+define ASCII_s      $73
+define ASCII_d      $64
 
 ; Pixels are at $0200 to $05ff
 ; Each row of pixels is 32 bits wide (0-31)
+define midPixelLow  $0f ; change back to ef later
+define midPixelHigh $02 ; change back to 03 later
 
-; How would we stop sysRandom from being 0?
+;;;;;
+; Main
+;;;;;
 
-getRandom:
-  LDA sysRandom
-; zero out first number? top 4 bits
-  AND #$0f
-  CMP #$0
-  BEQ getRandom
-  RTS
-
-; TODO: Why doesn't this work?
+; "Desktop shortcuts"
 JSR getRandom
 STA $0221
 JSR getRandom
@@ -30,7 +37,7 @@ STA $02a1
 JSR getRandom
 STA $02e1
 
-; Bottom of screen
+; "Taskbar"
 LDA #green
 STA $05e0
 STA $05e1
@@ -40,7 +47,100 @@ LDX #$e2
 drawBlueLine:
   STA $0500,x
   INX
-  CPX #$00
 BNE drawBlueLine
 
+; "Mouse"
+LDA #midPixelLow
+STA mouseLow
+LDA #midPixelHigh
+STA mouseHigh
+JSR drawMouse
 
+loop:
+  JSR doMovement
+  JSR sleep
+JMP loop
+
+; Mouse movement
+doMovement: 
+  LDA sysLastKey
+  CMP #ASCII_d ; Right
+  BEQ rightKey
+  CMP #ASCII_s ; Down
+  BEQ downKey
+  CMP #ASCII_a ; Left
+  BEQ leftKey
+RTS
+
+; moveMouse:
+;   LDA sysLastKey
+;   CMP #ASCII_w ; Up
+;   BEQ upKey
+;   CMP #ASCII_d ; Right
+;   BEQ rightKey
+;   CMP #ASCII_s ; Down
+;   BEQ downKey
+ ;  CMP #ASCII_a ; Left
+;   BEQ leftKey
+; RTS
+
+rightKey:
+   LDA #03
+   STA mouseMove
+   JSR moveMouse
+RTS
+
+downKey:
+   LDA #32
+   STA mouseMove
+   JSR moveMouse
+RTS
+
+leftKey:
+   LDA #$fd ; 11111101
+   STA mouseMove
+   JSR moveMouse
+RTS
+
+moveMouse:
+   JSR clearMouse
+   LDA mouseLow
+   CLC
+   ADC mouseMove ; VARIABLES :D
+   STA mouseLow
+   LDA #0
+   STA sysLastKey
+   JSR drawMouse
+RTS
+
+sleep:
+  LDX #0
+  spinloop:
+     NOP
+     NOP
+     DEX
+  BNE spinloop
+RTS
+
+;;;;;
+; Subroutines
+;;;;;
+
+getRandom:
+  LDA sysRandom
+  ; zero out first number? top 4 bits
+  AND #$0f
+  BEQ getRandom
+RTS
+
+drawMouse:
+  LDA #white
+  LDX #$0
+  STA (mouseLow,x)
+RTS
+
+clearMouse:
+  LDA #0
+  LDX #$0
+  STA (mouseLow,x)
+RTS
