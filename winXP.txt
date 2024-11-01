@@ -4,7 +4,7 @@ define lblue $03 ; The number 3
 define dblue $06 ; The number 6
 define ltgrn $0d ; The number 13
 define blue  $0e ; The number 14
-
+; 
 define sysRandom  $fe ; Address of random number
 define sysLastKey $ff
 
@@ -41,7 +41,6 @@ STA $02e1
 LDA #green
 STA $05e0
 STA $05e1
-
 LDA #blue
 LDX #$e2
 drawBlueLine:
@@ -70,22 +69,12 @@ doMovement:
   BEQ downKey
   CMP #ASCII_a ; Left
   BEQ leftKey
+  CMP #ASCII_w ; Up
+  BEQ upKey
 RTS
 
-; moveMouse:
-;   LDA sysLastKey
-;   CMP #ASCII_w ; Up
-;   BEQ upKey
-;   CMP #ASCII_d ; Right
-;   BEQ rightKey
-;   CMP #ASCII_s ; Down
-;   BEQ downKey
- ;  CMP #ASCII_a ; Left
-;   BEQ leftKey
-; RTS
-
 rightKey:
-   LDA #03
+   LDA #01
    STA mouseMove
    JSR moveMouse
 RTS
@@ -97,7 +86,13 @@ downKey:
 RTS
 
 leftKey:
-   LDA #$fd ; 11111101
+   LDA #$ff 
+   STA mouseMove
+   JSR moveMouse
+RTS
+
+upKey:
+   LDA #$e0 ; TBD
    STA mouseMove
    JSR moveMouse
 RTS
@@ -105,9 +100,23 @@ RTS
 moveMouse:
    JSR clearMouse
    LDA mouseLow
+   AND #$f0 ; Keep first 4 bits?
+   CMP #$f0
+;   BEQ movePage 
+   CMP #$e0
+ ;  BEQ movePage
+   JMP moveLowBit
+movePage:
+   LDA mouseHigh
+   CMP #5
+   BEQ setLastKey
+   INC mouseHigh
+moveLowBit:
+   LDA mouseLow
    CLC
    ADC mouseMove ; VARIABLES :D
    STA mouseLow
+setLastKey:
    LDA #0
    STA sysLastKey
    JSR drawMouse
@@ -121,10 +130,6 @@ sleep:
      DEX
   BNE spinloop
 RTS
-
-;;;;;
-; Subroutines
-;;;;;
 
 getRandom:
   LDA sysRandom
